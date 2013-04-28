@@ -1,12 +1,12 @@
 // Standard margins around the content
 // see http://bl.ocks.org/mbostock/3019563
-var margin = {top: 20, right: 50, bottom: 30, left: 50},
+var margin = {top: 30, right: 50, bottom: 30, left: 50},
         width = 960 - margin.left - margin.right,
         height = 4600 - margin.top - margin.bottom;
 
 // row height
-var y = 25; // bar height
-
+var h = 25; // bar height
+	
 // some constants
 var funding_max = 13648194056,
     population_max = 1347565324,
@@ -39,11 +39,6 @@ var x = d3.scale.log()
         .range([0, width])
         .nice();
 
-// Linear mapping of population onto bubble radius
-var r = d3.scale.linear()
-        .domain([0, population_max])
-        .range([bubble_min_radius, bubble_max_radius]);
-
 // Generate the axis markers
 // Tickmarks are in $millions
 // Below $0.01 million, show $0.
@@ -61,16 +56,31 @@ var xAxis = d3.svg.axis()
 // Load the data and render it
 d3.json("data.json", function(error, data) {
   console.log("data loaded!");
+var yScale = d3.scale.linear()
+			.domain([0, d3.max(data, function(d,i) { return i; })])
+			.range([margin.top, height]);
 
+var yAxis = d3.svg.axis()
+        .scale(yScale)
+        .orient("left")
+        .ticks(d3.max(data, function(d,i) { return i; }));			
   // Draw the X axis near the top
   svg.append("g")
-      .attr("class", "x axis")
-      .call(xAxis);
-
+      .attr("class", "axis")
+      .call(xAxis)
+	  .attr("fill", "green");
+  // Draw the y axis on the left
+  svg.append("g")
+      .attr("class", "axis")
+      .call(yAxis)
+	  .attr("fill", "green");	
+	 
+ 
   // Perform the data join
   // One group per datum (country)
   // translated vertically 
-  var countries = svg.selectAll(".country")
+ 
+ var countries = svg.selectAll(".country")
     .data(data)
     .enter().append("g")
     .attr("class", "country")
@@ -80,7 +90,7 @@ d3.json("data.json", function(error, data) {
       // i is the index (e.g. 15 out of 180)
       // we want to translate each country down by
       // i * y pixels (plus 50 for the axis markers)
-      return "translate(0, " + ((i * y) + 50) + ")"; });
+      return "translate(50, " + ((i * h) + 50) + ")"; });
 
   // Draw a line between each country
   countries.append("line")
@@ -96,32 +106,22 @@ d3.json("data.json", function(error, data) {
   // Draw the country name
   // 5px right of the bubble center
   // shifted up by y/4 so it's centered in the row.
-  countries.append("text")
+  
+	countries.append("text")
     .style("text-anchor", "center")
     .text(function(d) { return d.name; })
     .attr("transform", function(d) {
-      return "translate(" + (x(d.annual_aid[61]) + 5) + ", " + -(y/4) + ")"; } );
+      return "translate(" + (5) + ", " + (h-7) + ")"; } );
+		
 
-  // Draw the large, semitransparent circles
+  // Draw the rect svg object
   // Note that the styling happens in CSS!
-  countries.append("circle")
-    .attr("cy", -y/2)
-    .attr("cx", function(d) {
+ countries.append("rect")
+    .attr("height", h)
+    .attr("width", function(d) {
       // x position according to the x scale
       return x(d.annual_aid[61]); })
     .attr("r", function(d) {
       // radius according the r scale
       return r(d.population[61]); });
-
-  // Draw small dots in the center of the bubble
-  // Note that the styling happens right here!
-  // These styles are applied as a style attribute on the
-  // DOM nodes.
-  countries.append("circle")
-    .attr("cy", -y/2)
-    .attr("cx", function(d) {
-      // x position according to the x scale
-      return x(d.annual_aid[61]); })
-    .attr("r", 2) // fixed radius of 2px
-    .style("fill", "black");
-});
+	});
